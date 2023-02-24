@@ -1,58 +1,34 @@
 package ru.dashkovskajanastassia.notesapp;
 
-import android.content.res.TypedArray;
+import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
-
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link NoteFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class NoteFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
-    public NoteFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment NoteFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static NoteFragment newInstance(String param1, String param2) {
-        NoteFragment fragment = new NoteFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
+    static final String SELECTED_NOTE = "note";
+    Note note;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
         if(savedInstanceState != null){
          requireActivity().getSupportFragmentManager().popBackStack();
         }
@@ -61,20 +37,48 @@ public class NoteFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+
         return inflater.inflate(R.layout.fragment_note, container, false);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Bundle arguments = getArguments();
         if(arguments != null){
-            int index = arguments.getInt(ARG_INDEX);
+
+            note = (Note) arguments.getParcelable(SELECTED_NOTE);
             TextView text = view.findViewById(R.id.name);
-            TypedArray texts = getResources().obtainTypedArray(R.array.notesList);
-            text.setText(texts.getText(index));
-            texts.recycle();
+            // ОШИБКА
+            text.setText(note.getNoteTitle());
+
+            text.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+              note.setNoteTitle(s.toString());
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+
+                }
+            });
+            TextView tv = view.findViewById(R.id.Description);
+        tv.setText(note.getNoteContent());
+
+        Button buttonBack = view.findViewById(R.id.buttonback);
+        if(buttonBack != null){
+        buttonBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                requireActivity().getSupportFragmentManager().popBackStack();
+            }
+        });}
 
         }
     }
@@ -87,7 +91,62 @@ public class NoteFragment extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
-}
+
+    public static NoteFragment newInstance(Note note){
+        NoteFragment fragment = new NoteFragment();
+        Bundle args = new Bundle();
+        args.putParcelable(SELECTED_NOTE, note);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        menu.clear();
+        inflater.inflate(R.menu.note_menu,menu);
+
+    }
+
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if(item.getItemId() == R.id.action_delete){
+
+            Note.getNotes().remove(note);
+            note = null;
+            updateData();
+            if(!isLandscape()){
+                requireActivity().getSupportFragmentManager().popBackStack();
+            }
+            Toast.makeText(getContext(), "Удаление произошло успешно", Toast.LENGTH_LONG).show();
+            return true;
+
+        }
+        return super.onOptionsItemSelected(item);
+
+    }
+
+
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private void updateData(){
+        for(Fragment fragment: requireActivity().getSupportFragmentManager().getFragments()){
+            if(fragment instanceof  NotesFragment){
+                ((NotesFragment)fragment).initListNotes();
+                break;
+            }
+        };
+
+    }
+    private boolean isLandscape(){
+        return  getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+
+    }}
+
+
+
+
 
 
 

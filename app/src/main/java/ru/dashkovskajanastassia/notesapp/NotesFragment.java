@@ -2,10 +2,12 @@ package ru.dashkovskajanastassia.notesapp;
 
 import android.content.res.Configuration;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -16,19 +18,22 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class NotesFragment extends Fragment {
-
+    private static  final String  NOTE = "index";
+    private int currentPosition = 0;
+    static final String SELECTED_NOTE = "note";
+    Note note;
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             return inflater.inflate(R.layout.fragment_notes, container, false);
         }
 
-        private static  final String  NOTE = "Note";
-        private int currentPosition = 0;
+
 
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
-        outState.putInt(NOTE, currentPosition);
+
+        outState.putParcelable(SELECTED_NOTE, note);
             super.onSaveInstanceState(outState);
     }
 
@@ -36,46 +41,54 @@ public class NotesFragment extends Fragment {
         return  getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
 
     }
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
         public void onViewCreated(@NonNull View view, @Nullable Bundle
                 savedInstanceState) {
             super.onViewCreated(view, savedInstanceState);
             if(savedInstanceState != null){
-                currentPosition = savedInstanceState.getInt(NOTE, 0);
+
+               note = (Note)savedInstanceState.getParcelable(SELECTED_NOTE);
             }
+        dataConteiner = view.findViewById(R.id.fragment_container);
             initListNotes(view);
             if(isLandscape()){
-                ShowTextLand(currentPosition);
+                ShowTextLand(note);
             }
+
         }
-        // создаём список городов на экране из массива в ресурсах
+
+
+        @RequiresApi(api = Build.VERSION_CODES.O)
         private void initListNotes(View view) {
             LinearLayout layoutView = (LinearLayout) view;
-            String[] notes = getResources().getStringArray(R.array.notes);
 
-            for (int i = 0; i < notes.length; i++) {
+
+            for (int i = 0; i < Note.getNotes().size(); i++) {
                 TextView tv = new TextView(getContext());
-                tv.setText(notes[i]);
+                tv.setText(Note.getNotes().get(i).getNoteTitle());
                 tv.setTextSize(30);
                 layoutView.addView(tv);
                 final  int index = i;
                 tv.setOnClickListener(v ->{
-                    ShowText(index);
+                    ShowText(Note.getNotes().get(index));
             });
 
         }
     }
-    private void ShowText(int index){
+
+    private void ShowText(Note note){
+            this.note = note;
         if(isLandscape()){
-            ShowTextLand(index);
+            ShowTextLand(note);
         }
         else{
-            ShowTextPort(index);
+            ShowTextPort(note);
         }
 
     }
-    private void ShowTextPort(int index){
-        NoteFragment noteFragment = NoteFragment.newInstance(index);
+    private void ShowTextPort(Note note){
+        NoteFragment noteFragment = NoteFragment.newInstance(note);
 
         requireActivity()
                 .getSupportFragmentManager()
@@ -85,8 +98,8 @@ public class NotesFragment extends Fragment {
                 .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .commit();
     }
-    private void ShowTextLand(int index){
-        NoteFragment noteFragment = NoteFragment.newInstance(index);
+    private void ShowTextLand(Note note){
+        NoteFragment noteFragment = NoteFragment.newInstance(note);
 
         requireActivity()
                 .getSupportFragmentManager()
@@ -95,4 +108,28 @@ public class NotesFragment extends Fragment {
                 .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .commit();
     }
+
+    View dataConteiner;
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public void initListNotes(){
+        initListNotes(dataConteiner);
+
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
